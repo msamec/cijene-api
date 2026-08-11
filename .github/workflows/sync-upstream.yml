@@ -1,0 +1,26 @@
+name: Sync fork with upstream
+
+on:
+  schedule:
+    # 04:00 UTC daily, ahead of the homelab crawler's 08:00 Europe/Zagreb
+    # (06:00 UTC in summer) run -- an upstream scraper fix lands before that
+    # day's crawl instead of a day late.
+    - cron: "0 4 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      # Fast-forward only, same as GitHub's own "Sync fork" button
+      # (POST /repos/{owner}/{repo}/merge-upstream). If this repo ever
+      # carries its own commits that conflict with upstream, this fails
+      # loudly instead of silently merging or overwriting -- rebase main by
+      # hand at that point.
+      - name: Fast-forward main from upstream
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh api -X POST "repos/${{ github.repository }}/merge-upstream" -f branch=main
