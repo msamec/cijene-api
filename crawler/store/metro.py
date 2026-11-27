@@ -31,6 +31,12 @@ class MetroCrawler(BaseCrawler):
 
     ANCHOR_PRICE_DATE = datetime.date(2025, 5, 2)
 
+    # By 2026-11-25 "SIDRENA_02_05" is replaced by "BAZNA_CIJENA" (NN 132/2026).
+    # Its header states no date and the reference date differs per product, so
+    # these rows get no date.
+    ANCHOR_PRICE_COLUMN = "SIDRENA_02_05"
+    BASE_PRICE_COLUMN = "BAZNA_CIJENA"
+
     # Mapping for price fields from CSV columns
     PRICE_MAP = {
         # field: (column_name, is_required)
@@ -38,7 +44,8 @@ class MetroCrawler(BaseCrawler):
         "unit_price": ("CIJENA_PO_MJERI", True),
         "special_price": ("POSEBNA_PRODAJA", False),
         "best_price_30": ("NAJNIZA_30_DANA", False),
-        "anchor_price": ("SIDRENA_02_05", False),
+        "anchor_price": (ANCHOR_PRICE_COLUMN, False),
+        "base_price": (BASE_PRICE_COLUMN, False),
     }
 
     # Mapping for other product fields from CSV columns
@@ -55,7 +62,7 @@ class MetroCrawler(BaseCrawler):
     REQUIRED_COLUMNS = [
         "MPC",
         "CIJENA_PO_MJERI",
-        "SIDRENA_02_05",
+        (ANCHOR_PRICE_COLUMN, BASE_PRICE_COLUMN),
         "NAZIV",
         "SIFRA",
         "MARKA",
@@ -70,6 +77,18 @@ class MetroCrawler(BaseCrawler):
         "POSEBNA_PRODAJA",
         "NAJNIZA_30_DANA",
     ]
+
+    def fix_product_data(self, data: dict) -> dict:
+        """Read "BAZNA_CIJENA" as the anchor price, without a date."""
+        base_price = data.pop("base_price", None)
+        data = super().fix_product_data(data)
+
+        # A base price of 0 means none is published, as for the other prices
+        if data.get("anchor_price") is None and base_price:
+            data["anchor_price"] = base_price
+            data["anchor_price_date"] = None
+
+        return data
 
     def parse_index(self, content: str) -> list[str]:
         """
