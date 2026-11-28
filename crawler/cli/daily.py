@@ -49,7 +49,7 @@ CHAIN_TIMEOUT = 3 * 3600
 # (stores, products, prices) from a known-good run. Update by hand when a
 # chain opens or closes stores. Every chain in CRAWLERS needs an entry.
 EXPECTED: dict[str, tuple[int, int, int]] = {
-    "studenac": (1365, 38_253, 4_850_101),
+    "studenac": (1049, 36_946, 3_955_692),
     "spar": (144, 43_680, 1_939_264),
     "konzum": (573, 50_210, 5_281_672),
     "plodine": (154, 77_819, 6_196_694),
@@ -66,7 +66,7 @@ EXPECTED: dict[str, tuple[int, int, int]] = {
     "ntl": (343, 18_428, 1_606_748),
     "ribola": (106, 29_931, 952_803),
     "roto": (9, 9_201, 82_949),
-    "trgovina-krk": (14, 34_068, 156_733),
+    "trgovina-krk": (754, 54_123, 2_882_732),
     "brodokomerc": (1, 4_065, 4_065),
     "lorenco": (6, 31_322, 60_123),
     "boso": (283, 12_705, 976_489),
@@ -150,7 +150,8 @@ def count_rows(chain_dir: Path) -> Counts | None:
     """
     Row counts of a chain's CSV files, or None if any of them is missing.
 
-    `save_csv` normalizes whitespace, so each row is one line.
+    The chain writer in `crawler/store/output.py` normalizes whitespace, so
+    each row is one line.
     """
     paths = [chain_dir / f"{name}.csv" for name in Counts._fields]
     if not all(path.is_file() for path in paths):

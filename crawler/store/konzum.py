@@ -116,6 +116,9 @@ class KonzumCrawler(BaseCrawler):
 
     ADDRESS_PATTERN = re.compile(r"(.*) (\d{5}) (.*)")
 
+    FILE_DATE_PREFIX = re.compile(r"^\d{8}-")
+    """Price list file names start with the date, e.g. "20261127-SUPER,..."."""
+
     def fix_product_data(self, data: dict[str, Any]) -> dict[str, Any]:
         new_anchor_price = data.pop("new_anchor_price", None)
         on_special = data.pop("on_special", None)
@@ -150,36 +153,37 @@ class KonzumCrawler(BaseCrawler):
 
         soup = BeautifulSoup(content, "html.parser")
 
+        # Since 2026-11-27 the links point to the files on CloudFront. Each
+        # price list has two links (the title and the download button).
         urls = []
-        csv_links = soup.select("a[format='csv']")
-
-        for link in csv_links:
-            href = link.get("href")
-            if href:
-                urls.append(f"{self.BASE_URL}{href}")
+        for link in soup.select("a[href]"):
+            url = urllib.parse.urljoin(self.BASE_URL, str(link.get("href")))
+            if urllib.parse.urlparse(url).path.lower().endswith(".csv"):
+                urls.append(url)
 
         return list(set(urls))
 
     def parse_store_info(self, url: str) -> Store:
         """
-        Extracts store information from a CSV download URL.
+        Extracts store information from a price list URL.
 
         Args:
-            url: CSV download URL with store information in the query parameters
+            url: Price list URL; its file name is the date and the store info
 
         Returns:
-            Store object with parsed store information, or None if parsing fails
+            Store object with parsed store information
+
+        Raises:
+            ValueError: The file name has no store info that can be parsed.
         """
 
         logger.debug(f"Parsing store information from URL: {url}")
 
-        parsed_url = urllib.parse.urlparse(url)
-        query_params = urllib.parse.parse_qs(parsed_url.query)
-        title = urllib.parse.unquote(query_params.get("title", [""])[0])
-        title = title.replace("_", " ")
+        file_name = urllib.parse.unquote(urllib.parse.urlparse(url).path)
+        title = self.FILE_DATE_PREFIX.sub("", file_name.rsplit("/", 1)[-1])
 
         if not title:
-            raise ValueError(f"No title parameter found in URL: {url}")
+            raise ValueError(f"No file name found in URL: {url}")
 
         logger.debug(f"Decoded title: {title}")
 
