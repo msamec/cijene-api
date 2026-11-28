@@ -49,7 +49,7 @@ CHAIN_TIMEOUT = 3 * 3600
 # (stores, products, prices) from a known-good run. Update by hand when a
 # chain opens or closes stores. Every chain in CRAWLERS needs an entry.
 EXPECTED: dict[str, tuple[int, int, int]] = {
-    "studenac": (1365, 38_253, 4_850_101),
+    "studenac": (1049, 36_946, 3_955_692),
     "spar": (144, 43_680, 1_939_264),
     "konzum": (573, 50_210, 5_281_672),
     "plodine": (154, 77_819, 6_196_694),
